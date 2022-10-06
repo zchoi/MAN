@@ -289,10 +289,6 @@ class Encoder(nn.Module):
         self.N = 1 if opt.dataset == 'msvd' else 3
         self.layers_1 = nn.ModuleList(
             [DecoderLayer(self.hidden_size, self.hidden_size // 8, self.hidden_size // 8, 8) for _ in range(self.N)])
-        self.layers_2 = nn.ModuleList(
-            [DecoderLayer(self.hidden_size, self.hidden_size // 8, self.hidden_size // 8, 8) for _ in range(2)])
-        self.layers_3 = nn.ModuleList(
-            [DecoderLayer(self.hidden_size, self.hidden_size // 8, self.hidden_size // 8, 8) for _ in range(3)])
 
         # frame feature embedding
         self.frame_feature_embed = nn.Linear(self.concat_size, self.hidden_size)
@@ -311,18 +307,11 @@ class Encoder(nn.Module):
         elif opt.dataset == 'vatex':
             print("using {}".format('vatex_concept_feat_train.h5'))
             self.register_parameter("learnable_concept",nn.Parameter(torch.zeros(1, 64, self.hidden_size)))
-
+        self._init_weights()
+        
     def _init_weights(self):
-        nn.init.xavier_normal_(self.frame_feature_embed.weight)
-        nn.init.xavier_normal_(self.learnable_concept.weight)
-        nn.init.constant_(self.frame_feature_embed.bias, 0)
-        nn.init.constant_(self.learnable_concept.bias, 0)
-
-    def _init_lstm_state(self, d):
-        batch_size = d.size(0)
-        lstm_state_h = d.data.new(2, batch_size, self.hidden_size).zero_()
-        lstm_state_c = d.data.new(2, batch_size, self.hidden_size).zero_()
-        return lstm_state_h, lstm_state_c
+        # nn.init.sparse_(self.learnable_concept[0,:,:], sparsity=0.1)
+        nn.init.orthogonal_(self.learnable_concept)
 
     # forward for test
     def forward(self, cnn_feats):

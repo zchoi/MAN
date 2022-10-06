@@ -43,7 +43,7 @@ class Decoder(nn.Module):
         self.layers_1 = nn.ModuleList(
             [DecoderLayer(self.hidden_size, self.hidden_size // 8, self.hidden_size // 8, 8) for _ in range(self.N)])
         
-        self.register_parameter("learnable_concept",nn.Parameter(torch.zeros(1, 64, self.hidden_size)))
+        self.register_parameter("learnable_concept", nn.Parameter(torch.zeros(1, 64, self.hidden_size)))
 
         # word embedding matrix
         self.word_embed = nn.Embedding(self.vocab_size, self.word_size)
@@ -61,11 +61,11 @@ class Decoder(nn.Module):
 
         # final output layer
         self.out_fc = nn.Linear(opt.hidden_size * 3, self.hidden_size)
-        self.att_fc = nn.Linear(self.hidden_size*2, self.hidden_size)
         nn.init.xavier_normal_(self.out_fc.weight)
+
         self.word_restore = nn.Linear(opt.hidden_size, self.vocab_size)
         nn.init.xavier_normal_(self.word_restore.weight)
-
+        
         # beam search: The BeamSearch class is imported from Allennlp
         # DOCUMENTS: https://docs.allennlp.org/master/api/nn/beam_search/
         self.beam_search = BeamSearch(self.field.vocab.stoi['<eos>'], self.max_words, self.beam_size, per_node_beam_size=self.beam_size)
@@ -76,6 +76,8 @@ class Decoder(nn.Module):
             self.word_embed.weight.data.copy_(torch.from_numpy(self.field.vocab.vectors))
         else:
             self.word_embed.weight.data.copy_(self.field.vocab.vectors)
+        # nn.init.sparse_(self.learnable_concept[0,:,:], sparsity=0.1)
+        nn.init.orthogonal_(self.learnable_concept)
 
     def _init_lstm_state(self, d):
         batch_size = d.size(0)
